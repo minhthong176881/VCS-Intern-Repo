@@ -21,4 +21,4 @@ all:
 	gcc $(CLIENT_OBJECTS) $(GENERAL_OBJECTS) -o $(BUILD_DIRECTORY)/client $(LIBRARY)
 
 clean:
-	rm -rf build
+	rm -rf $(BUILD_DIRECTORY)
