@@ -1,27 +1,22 @@
 #include <stdio.h>
 #include <sys/socket.h>
-#include <string.h>
 #include <stdlib.h>
-#include "inet_sockets.h"
-
-#define BUF_SIZE 4096
+#include <string.h>
+#include "inet_socket.h"
 
 int communicate(int cfd)
 {
     while (1)
     {
-        printf("%% ");
-        char buf[BUF_SIZE];
+        printf("> ");
+        char buf[BUFSIZE];
         scanf("%s", buf);
-        
-        int numSend = send(cfd, buf, strlen(buf), 0);
-        if (numSend == -1)
+        if (send(cfd, buf, strlen(buf) + 1, 0) == -1)
         {
             perror("send()");
             return -1;
         }
-
-        int numRecv = recv(cfd, buf, BUF_SIZE, 0);
+        int numRecv = recv(cfd, buf, BUFSIZE, 0);
         if (numRecv == -1)
         {
             perror("recv()");
@@ -29,31 +24,36 @@ int communicate(int cfd)
         }
         printf("%s\n", buf);
     }
+}
+
+int start_client(char *ip, int port)
+{
+    int cfd = inet_connect(ip, port, SOCK_STREAM);
+    if (cfd == -1)
+    {
+        perror("Error: inet_connect()\n");
+        return -1;
+    }
+
+    communicate(cfd);
+
     return 0;
 }
 
-int startClient(const char *ip, const int port)
-{
-    printf("Starting client...\n");
-    int cfd = inetConnect(ip, port, SOCK_STREAM);
-    if (cfd == -1)
-    {
-        perror("inetConnect()");
-        return -1;
-    }
-
-    return communicate(cfd);
-}
-
-int main(int argc, const char *argv[])
+int main(int argc, char *argv[])
 {
     if (argc != 3)
     {
-        perror("Invalid command!");
-        return -1;
+        printf("Invalid command!\n");
+        return 1;
     }
 
     int port = atoi(argv[2]);
+    if (port == 0)
+    {
+        printf("Invalid port number!\n");
+        return 1;
+    }
 
-    return startClient(argv[1], port);
+    return start_client(argv[1], port);
 }
