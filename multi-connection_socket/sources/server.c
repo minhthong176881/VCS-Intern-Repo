@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "inet_socket.h"
 
-#define BACKLOG 1000
+#define BACKLOGS 1000
 
 void *handle_connection(void *data)
 {
@@ -38,7 +38,7 @@ void *handle_connection(void *data)
 
 int start_server(int port)
 {
-    int sfd = inet_listen(port, BACKLOG);
+    int sfd = inet_listen(port, BACKLOGS);
 
     if (sfd == -1)
     {
