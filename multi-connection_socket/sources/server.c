@@ -24,7 +24,7 @@ void *handle_connection(void *data)
             break;
         }
         
-        printf("Server: %s", buf);
+        printf("Connection %d: %s\n", cfd, buf);
         
         if (send(cfd, buf, numRecv, 0) != numRecv)
         {

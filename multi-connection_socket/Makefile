@@ -1,13 +1,24 @@
-.PHONY: client multiprocess_server
+BUILD_DIRECTORY = build
+SOURCES_DIRECTORY = sources
 
-client:
-	mkdir -p build
-	gcc sources/client.c sources/inet_sockets.c -o build/client
+GENERAL_SOURCES = $(SOURCES_DIRECTORY)/inet_socket.c
+GENERAL_OBJECTS = $(BUILD_DIRECTORY)/inet_socket.o
 
-multiprocess_server:
-	mkdir -p build
-	gcc sources/multiprocess_server.c sources/inet_sockets.c -o build/multiprocess_server
+SERVER_SOURCES = $(SOURCES_DIRECTORY)/server.c
+SERVER_OBJECTS = $(BUILD_DIRECTORY)/server.o
 
-multithread_server:
-	mkdir -p build
-	gcc sources/multithread_server.c sources/inet_sockets.c -o build/multithread_server -lpthread
+CLIENT_SOURCES = $(SOURCES_DIRECTORY)/client.c
+CLIENT_OBJECTS = $(BUILD_DIRECTORY)/client.o
+
+LIBRARY = -lpthread
+
+all:
+	mkdir -p $(BUILD_DIRECTORY)
+	gcc -c $(GENERAL_SOURCES) -o $(GENERAL_OBJECTS)
+	gcc -c $(SERVER_SOURCES) -o $(SERVER_OBJECTS)
+	gcc $(SERVER_OBJECTS) $(GENERAL_OBJECTS) -o $(BUILD_DIRECTORY)/server $(LIBRARY)
+	gcc -c $(CLIENT_SOURCES) -o $(CLIENT_OBJECTS)
+	gcc $(CLIENT_OBJECTS) $(GENERAL_OBJECTS) -o $(BUILD_DIRECTORY)/client $(LIBRARY)
+
+clean:
+	rm -rf build
