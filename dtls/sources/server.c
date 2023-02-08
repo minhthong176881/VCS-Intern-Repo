@@ -6,6 +6,8 @@
 #include "inet_socket.h"
 
 #define BUFSIZE 512
+#define CERTIFICATE_PATH "server/certificate.crt"
+#define PRIVATE_KEY_PATH "server/private.key"
 
 void print_openssl_error(char *message)
 {
@@ -22,6 +24,7 @@ int handle_connection(SSL *ssl)
         if (numRead <= 0)
         {
             print_openssl_error("SSL_read()");
+            return -1;
         }
 
         printf("%s\n", buf);
@@ -29,6 +32,7 @@ int handle_connection(SSL *ssl)
         if (SSL_write(ssl, buf, strlen(buf) + 1) <= 0)
         {
             print_openssl_error("SSL_write()");
+            return -1;
         }
     }
 
@@ -44,50 +48,59 @@ int generate_key()
         return -1;
     }
 
-    X509 *x = X509_new();
-    if (x == NULL)
+    X509 *cert = X509_new();
+    if (cert == NULL)
     {
         print_openssl_error("X509_new()");
         return -1;
     }
-    
-    X509_set_version(x, X509_VERSION_3);
-    X509_set_pubkey(x, pkey);
-    
 
-    FILE *cert_file = fopen("certificate.crt", "w");
+    X509_set_version(cert, X509_VERSION_3);
+    X509_set_pubkey(cert, pkey);
+
+    BIO *cert_file = BIO_new_file(CERTIFICATE_PATH, "w");
     if (cert_file == NULL)
     {
-        perror("fopen()");
+        printf("BIO_new_file()\n");
+        return -1;
     }
-    PEM_write_X509(cert_file, x);
-    fclose(cert_file);
+    PEM_write_bio_X509(cert_file, cert);
+    BIO_free(cert_file);
 
-    FILE *pkey_file = fopen("private.key", "w");
+    BIO *pkey_file = BIO_new_file(PRIVATE_KEY_PATH, "w");
     if (pkey_file == NULL)
     {
-        perror("fopen");
+        printf("BIO_new_file()\n");
+        return -1;
     }
-    PEM_write_PrivateKey(pkey_file, pkey, NULL, NULL, 0, NULL, NULL);
-    fclose(pkey_file);
+    PEM_write_bio_PrivateKey(pkey_file, pkey, NULL, NULL, 0, NULL, NULL);
+    BIO_free(pkey_file);
 
-    X509_free(x);
+    X509_free(cert);
     EVP_PKEY_free(pkey);
 }
 
 int start_server(int port)
 {
-    generate_key();
+    // generate_key();
 
     SSL_CTX *ctx = SSL_CTX_new(DTLS_server_method());
-    SSL_CTX_use_certificate_file(ctx, "certificate.crt", SSL_FILETYPE_PEM);
-    SSL_CTX_use_PrivateKey_file(ctx, "private.key", SSL_FILETYPE_PEM);
+    if (ctx == NULL)
+    {
+        printf("SSL_CTX_new()\n");
+        return -1;
+    }
 
-    SSL* ssl = SSL_new(ctx);
+    SSL_CTX_set_cipher_list(ctx, "RSA");
+    SSL_CTX_use_certificate_file(ctx, CERTIFICATE_PATH, SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(ctx, PRIVATE_KEY_PATH, SSL_FILETYPE_PEM);
+
+    SSL *ssl = SSL_new(ctx);
 
     int sfd = inet_bind(port, SOCK_DGRAM);
     if (sfd == -1)
     {
+        printf("inet_bind()\n");
         return sfd;
     }
 
@@ -99,7 +112,12 @@ int start_server(int port)
         return -1;
     }
 
-    return handle_connection(ssl);
+    int ret = handle_connection(ssl);
+
+    SSL_free(ssl);
+    SSL_CTX_free(ctx);
+
+    return ret;
 }
 
 int main(int argc, char *argv[])
