@@ -8,7 +8,7 @@
 void *receive_message(void *arg)
 {
     int cfd = *(int *)arg;
-    
+
     char buf[BUFSIZ];
     while (1)
     {
@@ -30,21 +30,35 @@ void *receive_message(void *arg)
 int communicate(int cfd)
 {
     char buf[BUFSIZ];
-    
+
     // Get ID
-    printf("Enter user name: ");
-    scanf("%[^\n]", buf);
-    getchar();
-    if (send(cfd, buf, strlen(buf) + 1, 0) < 0)
+    while (1)
     {
-        perror("send()");
-        return -1;
+        printf("Enter user name: ");
+        buf[0] = '\0';
+        scanf("%[^\n]", buf);
+        getchar();
+        if (strlen(buf) == 0)
+        {
+            continue;
+        }
+        if (send(cfd, buf, strlen(buf) + 1, 0) < 0)
+        {
+            perror("send()");
+            return -1;
+        }
+        break;
     }
 
     while (1)
     {
+        buf[0] = '\0';
         scanf("%[^\n]", buf);
         getchar();
+        if (strlen(buf) == 0)
+        {
+            continue;
+        }
         if (send(cfd, buf, strlen(buf) + 1, 0) < 0)
         {
             perror("send()");

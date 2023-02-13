@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <sys/queue.h>
 #include <string.h>
+#include <unistd.h>
 #include "inet_socket.h"
 
 #define BACKLOGS 1000
@@ -52,7 +53,7 @@ int delete_clients(int cfd)
     {
         if (clients[i].fd == cfd)
         {
-            clients[i].fd == -1;
+            clients[i].fd = -1;
             return 0;
         }
     }
@@ -115,8 +116,8 @@ void *handle_connection(void *arg)
         }
         if (numRead == 0)
         {
+            printf("Closed client %d!\n", cfd);
             sprintf(buf, "%s has left.", name);
-            printf("%s\n", buf);
             delete_clients(cfd);
             send_to_all(buf);
             break;
