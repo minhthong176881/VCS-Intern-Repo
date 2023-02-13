@@ -30,9 +30,18 @@ void *receive_message(void *arg)
 int communicate(int cfd)
 {
     char buf[BUFSIZ];
+    
+    // Get ID
+    printf("Enter user name: ");
+    scanf("%s", buf);
+    if (send(cfd, buf, strlen(buf) + 1, 0) < 0)
+    {
+        perror("send()");
+        return -1;
+    }
+
     while (1)
     {
-        // printf("> ");
         scanf("%s", buf);
         if (send(cfd, buf, strlen(buf) + 1, 0) < 0)
         {

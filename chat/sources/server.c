@@ -8,14 +8,19 @@
 
 #define BACKLOGS 1000
 
-int clients[BACKLOGS] = {-1};
+struct client_t {
+    int fd;
+    char *name;
+};
+
+struct client_t clients[BACKLOGS];
 int num_clients = 0;
 
 int client_list_init()
 {
     for (int i = 0; i < BACKLOGS; i++)
     {
-        clients[i] = -1;
+        clients[i].fd = -1;
     }
     return 0;
 }
@@ -30,9 +35,9 @@ int add_client(int cfd)
 
     for (int i = 0; i < BACKLOGS; i++)
     {
-        if (clients[i] == -1)
+        if (clients[i].fd == -1)
         {
-            clients[i] = cfd;
+            clients[i].fd = cfd;
             ++num_clients;
             return 0;
         }
@@ -45,9 +50,9 @@ int delete_clients(int cfd)
 {
     for (int i = 0; i < BACKLOGS; i++)
     {
-        if (clients[i] == cfd)
+        if (clients[i].fd == cfd)
         {
-            clients[i] == -1;
+            clients[i].fd == -1;
             return 0;
         }
     }
@@ -59,9 +64,9 @@ int send_to_all(char *buf)
 {
     for (int i = 0; i < BACKLOGS; i++)
     {
-        if (clients[i] != -1)
+        if (clients[i].fd != -1)
         {
-            if (send(clients[i], buf, strlen(buf) + 1, 0) < 0)
+            if (send(clients[i].fd, buf, strlen(buf) + 1, 0) < 0)
             {
                 perror("send()");
                 return -1;
@@ -76,6 +81,27 @@ void *handle_connection(void *arg)
     printf("Client %d connected!\n", cfd);
 
     char buf[BUFSIZ];
+    
+    // Get ID
+    if (recv(cfd, buf, BUFSIZ, 0) < 0)
+    {
+        perror("recv()");
+        return (void *)-1;
+    }
+
+    // Bind name to cfd
+    char *name = malloc(strlen(buf) + 1);
+    strncpy(name, buf, strlen(buf));
+    for (int i = 0; i < BACKLOGS; i++)
+    {
+        if (cfd == clients[i].fd)
+        {
+            clients[i].name = malloc(strlen(name) + 1);
+            strncpy(clients[i].name, name, strlen(name));
+            break;
+        }
+    }
+    
     while (1)
     {
         int numRead = recv(cfd, buf, BUFSIZ, 0);
@@ -86,16 +112,22 @@ void *handle_connection(void *arg)
         }
         if (numRead == 0)
         {
-            sprintf(buf, "Client %d closed\n", cfd);
+            sprintf(buf, "%s closed\n", name);
             printf("%s\n", buf);
+            delete_clients(cfd);
             send_to_all(buf);
             break;
         }
 
         printf("Client %d: %s\n", cfd, buf);
 
+        char *tmp = malloc(strlen(buf) + 1);
+        strncpy(tmp, buf, strlen(buf));
+        sprintf(buf, "%s: %s", name, tmp);
         send_to_all(buf);
     }
+
+    free(name);
 
     return 0;
 }
@@ -118,10 +150,11 @@ int start_server(int port)
         }
         
         add_client(cfd);
-
-        void *arg = malloc(sizeof(int));
-        *(int *)arg = cfd;
         
+        struct client_t client = {cfd, NULL};
+        void *arg = malloc(sizeof(struct client_t));
+        memcpy(arg, &client, sizeof(struct client_t));
+
         pthread_t thread;
         pthread_create(&thread, NULL, handle_connection, arg);
     }
