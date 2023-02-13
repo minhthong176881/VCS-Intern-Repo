@@ -33,7 +33,8 @@ int communicate(int cfd)
     
     // Get ID
     printf("Enter user name: ");
-    scanf("%s", buf);
+    scanf("%[^\n]", buf);
+    getchar();
     if (send(cfd, buf, strlen(buf) + 1, 0) < 0)
     {
         perror("send()");
@@ -42,7 +43,8 @@ int communicate(int cfd)
 
     while (1)
     {
-        scanf("%s", buf);
+        scanf("%[^\n]", buf);
+        getchar();
         if (send(cfd, buf, strlen(buf) + 1, 0) < 0)
         {
             perror("send()");

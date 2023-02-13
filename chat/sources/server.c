@@ -102,6 +102,9 @@ void *handle_connection(void *arg)
         }
     }
     
+    sprintf(buf, "%s has joined the chat.", name);
+    send_to_all(buf);
+
     while (1)
     {
         int numRead = recv(cfd, buf, BUFSIZ, 0);
@@ -112,7 +115,7 @@ void *handle_connection(void *arg)
         }
         if (numRead == 0)
         {
-            sprintf(buf, "%s closed\n", name);
+            sprintf(buf, "%s has left.", name);
             printf("%s\n", buf);
             delete_clients(cfd);
             send_to_all(buf);
