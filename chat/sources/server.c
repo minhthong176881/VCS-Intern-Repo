@@ -65,7 +65,7 @@ int send_to_all(char *buf)
 {
     for (int i = 0; i < BACKLOGS; i++)
     {
-        if (clients[i].fd != -1)
+        if (clients[i].fd != -1 && clients[i].name != NULL)
         {
             if (send(clients[i].fd, buf, strlen(buf) + 1, 0) < 0)
             {
